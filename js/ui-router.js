@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { renderRequirementsPage } from "./modules/requirements.js";
 
 export function buildNav() {
   const nav = document.getElementById("nav");
@@ -23,7 +24,6 @@ export function buildNav() {
     nav.appendChild(div);
   });
 
-  // default route
   const hash = location.hash.replace("#/", "");
   routeTo(hash || "home");
 }
@@ -35,8 +35,13 @@ export function routeTo(route) {
   const header = document.getElementById("pageHeader");
   const body = document.getElementById("pageBody");
 
+  if (route === "requirements") {
+    renderRequirementsPage({ headerEl: header, rootEl: body });
+    return;
+  }
+
   header.textContent = route.toUpperCase();
-  body.innerHTML = `<div class="card">Module <b>${route}</b> loaded. (Part-1 placeholder)</div>`;
+  body.innerHTML = `<div class="card card-wide">Module <b>${route}</b> pending (NEXT parts).</div>`;
 }
 
 function setActive(route) {
