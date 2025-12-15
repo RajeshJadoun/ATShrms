@@ -23,7 +23,6 @@ export function logout() {
 export async function exchangeIdToken(idToken) {
   const res = await fetch(CONFIG.API_URL, {
     method: "POST",
-    mode: 'no-cors'
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "LOGIN_EXCHANGE", token: "", data: { idToken } }),
   });
