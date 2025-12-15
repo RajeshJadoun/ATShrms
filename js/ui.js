@@ -64,28 +64,28 @@ export function renderShell() {
 
 export async function renderDashboard(view) {
   if (!isLoggedIn()) {
-    view.innerHTML = `<div class="card"><div class="h1">Login required</div><div class="muted">Please sign in.</div></div>`;
+    view.innerHTML = `<div class="card"><div class="h1">Login required</div></div>`;
     return;
   }
 
-  const dash = await api("GET_DASHBOARD", {});
-  const reqCount = Object.entries(dash.counts.requirements || {}).map(([k,v]) => `<span class="badge">${k}: ${v}</span>`).join(" ");
-  const candCount = Object.entries(dash.counts.candidates || {}).map(([k,v]) => `<span class="badge">${k}: ${v}</span>`).join(" ");
-
-  view.innerHTML = `
-    <div class="h1">Dashboard</div>
-
-    <div class="grid cols2">
+  try {
+    const dash = await api("GET_DASHBOARD", {});
+    view.innerHTML = `
+      <div class="h1">Dashboard</div>
+      <div class="card"><pre class="muted small" style="white-space:pre-wrap;">${escapeHtml(JSON.stringify(dash, null, 2))}</pre></div>
+    `;
+  } catch (e) {
+    toast(e.message, true);
+    view.innerHTML = `
+      <div class="h1">Dashboard</div>
       <div class="card">
-        <div class="card-title">Requirement Status</div>
-        <div>${reqCount || `<span class="muted">No data</span>`}</div>
+        <div class="badge bad">API Error</div>
+        <div class="muted" style="margin-top:8px;">${escapeHtml(e.message)}</div>
+        <div class="muted small" style="margin-top:8px;">Fix: PERMISSIONS sheet me DASHBOARD_VIEW add karo.</div>
       </div>
-      <div class="card">
-        <div class="card-title">Candidate Status</div>
-        <div>${candCount || `<span class="muted">No data</span>`}</div>
-      </div>
-    </div>
-
+    `;
+  }
+}
     <div class="card" style="margin-top:12px;">
       <div class="card-title">Queues</div>
       <div class="muted small">Role-wise queues backend se aa rahi hain. Next step me hum yaha cards banayenge.</div>
