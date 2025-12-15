@@ -1,21 +1,33 @@
-import { setUser } from "./state.js";
+import { CONFIG } from "./config.js";
 
-// Placeholder for Google OAuth integration.
-// Replace with real OAuth flow on production GitHub Pages.
-export const login = async () => {
-  const mockUser = {
-    id: "U123",
-    name: "Rajesh",
-    role: "HR",
-    permissions: [
-      "RAISE_REQUIREMENT",
-      "APPROVE_REQUIREMENT",
-      "JOB_POST",
-      "CALL_SCREENING",
-      "SHORTLIST_DECISION",
-    ],
-  };
-  const mockToken = "demo-session-token";
-  setUser(mockUser, mockToken);
-  return { user: mockUser, token: mockToken };
-};
+const LS_KEY = "HRMS_SESSION";
+
+export function setSession(session) {
+  localStorage.setItem(LS_KEY, JSON.stringify(session));
+}
+
+export function getSession() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch { return null; }
+}
+
+export function getSessionToken() {
+  return getSession()?.sessionToken || "";
+}
+
+export function logout() {
+  localStorage.removeItem(LS_KEY);
+  location.href = "login.html";
+}
+
+// Google Identity callback (id_token)
+export async function exchangeIdToken(idToken) {
+  const res = await fetch(CONFIG.API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "LOGIN_EXCHANGE", token: "", data: { idToken } }),
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error?.message || "Login failed");
+  setSession({ ...json.data });
+  return json.data;
+}
