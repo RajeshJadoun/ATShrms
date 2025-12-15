@@ -1,37 +1,60 @@
 import { CONFIG } from "./config.js";
 import { api } from "./api.js";
-import { setSession, clearSession, State } from "./state.js";
+import { setSession, clearSession } from "./state.js";
 import { toast, renderShell } from "./ui.js";
 
-export function initGoogleLogin() {
-  // render google button
-  window.google?.accounts?.id?.initialize({
-    client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: async (resp) => {
-      try {
-        const idToken = resp.credential;
-        const data = await api("LOGIN_EXCHANGE", { idToken }, { public: true });
-        setSession({ user: data.user, sessionToken: data.sessionToken });
-        toast(`Logged in: ${data.user.name} (${data.user.role})`);
-        renderShell();
-      } catch (e) {
-        clearSession();
-        toast("Login failed: " + e.message, true);
-      }
-    }
-  });
-
-  window.google?.accounts?.id?.renderButton(
-    document.getElementById("gbtn"),
-    { theme: "outline", size: "large", text: "signin_with" }
-  );
+async function waitForGIS(maxMs = 8000) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    if (window.google?.accounts?.id) return true;
+    await new Promise(r => setTimeout(r, 150));
+  }
+  return false;
 }
 
-export async function refreshSessionUser() {
-  // easiest: call GET_DASHBOARD (token verifies)
-  const dash = await api("GET_DASHBOARD", {});
-  // backend returns user summary; keep existing user name/role from State unless you want to override
-  return dash;
+export async function initGoogleLogin() {
+  const el = document.getElementById("gbtn");
+  if (!el) return;
+
+  el.innerHTML = `<div class="muted small">Loading Google Sign-in…</div>`;
+
+  const ok = await waitForGIS();
+  if (!ok) {
+    el.innerHTML = `<div class="badge bad">Google Sign-in load failed</div>
+                    <div class="muted small" style="margin-top:6px;">Check adblock / third-party script blocked.</div>`;
+    return;
+  }
+
+  try {
+    window.google.accounts.id.initialize({
+      client_id: CONFIG.GOOGLE_CLIENT_ID,
+      callback: async (resp) => {
+        try {
+          const idToken = resp.credential;
+          const data = await api("LOGIN_EXCHANGE", { idToken }, { public: true });
+
+          setSession({ user: data.user, sessionToken: data.sessionToken });
+          toast(`Logged in: ${data.user.name} (${data.user.role})`);
+          renderShell();
+        } catch (e) {
+          clearSession();
+          toast("Login failed: " + e.message, true);
+        }
+      }
+    });
+
+    el.innerHTML = "";
+    window.google.accounts.id.renderButton(el, {
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "pill"
+    });
+
+  } catch (e) {
+    el.innerHTML = `<div class="badge bad">Init error</div>
+                    <div class="muted small" style="margin-top:6px;">${String(e.message || e)}</div>`;
+  }
 }
 
 export function logout() {
