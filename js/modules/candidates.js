@@ -44,9 +44,9 @@ function uploadPanelHtml(reqs, selectedReq) {
     <div class="card card-wide">
       <div class="row">
         <h3 style="margin:0">Bulk Upload CV</h3>
-        <span class="pill ok">Rule: Portal Posted ≥ 1</span>
+        <span class="pill ok">Portal Posted ≥ 1</span>
       </div>
-      <p class="muted">Filename format: <b>Name_Mobile_Source.pdf</b></p>
+      <p class="muted">Filename: <b>Name_Mobile_Source.pdf</b></p>
 
       <div class="form-row">
         <div class="label">Select Requirement</div>
@@ -71,13 +71,13 @@ function uploadPanelHtml(reqs, selectedReq) {
 
       <div class="hr"></div>
       <div class="hint">
-        Upload flow: <b>Upload → Candidate create</b> (CV_UPLOADED) → modal: <b>Relevant?</b> → YES = SHORTLISTED, NO = Rejection Log
+        Upload → CV_UPLOADED → modal Relevant? → YES=SHORTLISTED (then Send to On-Call) / NO=Rejected
       </div>
     </div>
   `;
 }
 
-function bindUploadPanel({ rootEl, reqs }) {
+function bindUploadPanel({ rootEl }) {
   const reqSel = rootEl.querySelector("#reqSel");
   const filesEl = rootEl.querySelector("#cvFiles");
   const preview = rootEl.querySelector("#preview");
@@ -122,14 +122,11 @@ function bindUploadPanel({ rootEl, reqs }) {
 
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
-
-        if (f.size > 8 * 1024 * 1024) {
-          throw new Error(`File too large (>8MB): ${f.name}`);
-        }
+        if (f.size > 8 * 1024 * 1024) throw new Error(`File too large (>8MB): ${f.name}`);
 
         msg.textContent = `Uploading ${i+1}/${files.length}: ${f.name}`;
-
         const base64 = await fileToBase64(f);
+
         const res = await apiCall("ADD_CANDIDATE", {
           requirementId: reqSel.value,
           fileName: f.name,
@@ -138,7 +135,8 @@ function bindUploadPanel({ rootEl, reqs }) {
         });
 
         const cand = res.candidate;
-        // ask decision
+
+        // relevant modal
         const decision = await askRelevantModal({
           title: `${cand.name} (${cand.mobile || "-"})`,
           sub: `Source: ${cand.source || "Unknown"} | Status: ${cand.status}`,
@@ -146,23 +144,16 @@ function bindUploadPanel({ rootEl, reqs }) {
         });
 
         if (decision.ok) {
-          await apiCall("SHORTLIST_DECISION", {
-            candidateId: cand.id,
-            decision: "YES"
-          });
+          await apiCall("SHORTLIST_DECISION", { candidateId: cand.id, decision: "YES" });
         } else {
-          await apiCall("SHORTLIST_DECISION", {
-            candidateId: cand.id,
-            decision: "NO",
-            reason: decision.reason || "Not relevant"
-          });
+          await apiCall("SHORTLIST_DECISION", { candidateId: cand.id, decision: "NO", reason: decision.reason || "Not relevant" });
         }
       }
 
       msg.textContent = "All uploaded ✅";
       btnStart.disabled = false;
-      // refresh list
       routeTo("candidates", { req: reqSel.value });
+
     } catch (e) {
       msg.textContent = e.message || String(e);
       btnStart.disabled = false;
@@ -185,12 +176,14 @@ async function renderList({ right, requirementId, status }) {
         <button class="btn btn-sm" data-st="">All</button>
         <button class="btn btn-sm" data-st="CV_UPLOADED">CV_UPLOADED</button>
         <button class="btn btn-sm" data-st="SHORTLISTED">SHORTLISTED</button>
-        <button class="btn btn-sm" data-st="REJECTED_SHORTLISTING">REJECTED</button>
+        <button class="btn btn-sm" data-st="CALL_PENDING">CALL_PENDING</button>
+        <button class="btn btn-sm" data-st="OWNER_REVIEW">OWNER_REVIEW</button>
+        <button class="btn btn-sm" data-st="REJECTED_SHORTLISTING">REJECTED_SHORTLISTING</button>
+        <button class="btn btn-sm" data-st="REJECTED_CALL_SCREENING">REJECTED_CALL_SCREENING</button>
         <span class="right muted small">${requirementId ? `Req: ${esc(requirementId)}` : ""}</span>
       </div>
 
       <div class="hr"></div>
-
       <div id="list"></div>
     </div>
   `;
@@ -224,7 +217,12 @@ async function renderList({ right, requirementId, status }) {
               ${c.ui?.canShortlistDecision ? `
                 <button class="btn btn-sm" data-yes="${esc(c.id)}">Shortlist</button>
                 <button class="btn btn-sm" data-no="${esc(c.id)}">Reject</button>
-              ` : `<span class="muted small">-</span>`}
+              ` : ""}
+              ${c.ui?.canMoveToCall ? `
+                <button class="btn btn-sm" data-move="${esc(c.id)}">Send to On-Call</button>
+                <button class="btn btn-sm" data-rejs="${esc(c.id)}">Reject (Shortlisting)</button>
+              ` : ""}
+              ${(!c.ui?.canShortlistDecision && !c.ui?.canMoveToCall) ? `<span class="muted small">-</span>` : ""}
             </td>
           </tr>
         `).join("")}
@@ -232,7 +230,7 @@ async function renderList({ right, requirementId, status }) {
     </table>
   `;
 
-  // bind quick decisions
+  // bind actions
   listEl.querySelectorAll("[data-yes]").forEach(btn => {
     btn.onclick = async () => {
       const id = btn.getAttribute("data-yes");
@@ -250,9 +248,28 @@ async function renderList({ right, requirementId, status }) {
       routeTo("candidates", { req: requirementId, st: status || "" });
     };
   });
+
+  listEl.querySelectorAll("[data-move]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.getAttribute("data-move");
+      await apiCall("MOVE_TO_CALL_SCREENING", { candidateId: id });
+      alert("Moved to On-Call ✅ (CALL_PENDING)");
+      routeTo("calls", {}); // directly open calls
+    };
+  });
+
+  listEl.querySelectorAll("[data-rejs]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.getAttribute("data-rejs");
+      const reason = prompt("Reject at Shortlisting (mandatory):");
+      if (!reason) return;
+      await apiCall("REJECT_AT_SHORTLISTING", { candidateId: id, reason });
+      routeTo("candidates", { req: requirementId, st: status || "" });
+    };
+  });
 }
 
-/** -------- Modal -------- */
+/** -------- Modal (same as Part-4) -------- */
 function modalHtml() {
   return `
     <div class="modal-backdrop" id="modalBack" style="display:none">
@@ -313,7 +330,6 @@ function askRelevantModal({ title, sub, cvUrl }) {
       cleanup();
       resolve(val);
     }
-
     function cleanup() {
       mClose.onclick = null;
       mYes.onclick = null;
@@ -322,8 +338,7 @@ function askRelevantModal({ title, sub, cvUrl }) {
     }
 
     back.style.display = "flex";
-
-    mClose.onclick = () => close({ ok: true }); // default allow continue
+    mClose.onclick = () => close({ ok: true });
     mYes.onclick = () => close({ ok: true });
     mNo.onclick = () => { mReasonBox.style.display = "block"; mReason.focus(); };
     mSubmitNo.onclick = () => {
@@ -348,9 +363,8 @@ function fileToBase64(file) {
     const reader = new FileReader();
     reader.onload = () => {
       const res = String(reader.result || "");
-      // "data:application/pdf;base64,...."
-      const base64 = res.split(",")[1] || "";
-      resolve(base64);
+      resolve(res-hook(res));
+      function res-hook(s){ return s.split(",")[1] || ""; }
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -358,17 +372,15 @@ function fileToBase64(file) {
 }
 
 function pillStatus(st) {
-  const cls = st === "SHORTLISTED" ? "ok" : (st.includes("REJECT") ? "bad" : "warn");
+  const cls = st === "SHORTLISTED" || st === "OWNER_REVIEW" ? "ok" : (String(st).includes("REJECT") ? "bad" : "warn");
   return `<span class="pill ${cls}">${esc(st)}</span>`;
 }
 
 function formatBytes(bytes) {
   const u = ["B","KB","MB","GB"];
-  let i = 0;
-  let n = bytes;
+  let i = 0, n = bytes;
   while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
   return `${n.toFixed(i?1:0)} ${u[i]}`;
 }
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]))}
-function cssId(s){return String(s).replace(/[^a-zA-Z0-9_-]/g,"_")}
