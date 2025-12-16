@@ -15,8 +15,7 @@ import { renderSettingsPage } from "./modules/settings.js";
 import { renderPermissionsPage } from "./modules/permissions.js";
 import { renderUsersAdminPage } from "./modules/usersAdmin.js";
 import { renderTestBankPage } from "./modules/testBank.js";
-
-
+import { renderOwnerQueuePage } from "./modules/ownerQueue.js";
 
 export function buildNav() {
   const nav = document.getElementById("nav");
@@ -40,7 +39,7 @@ export function buildNav() {
     { id: "permissions", label: "Permissions", roles: ["ADMIN"] },
     { id: "users-admin", label: "Users", roles: ["ADMIN"] },
     { id: "test-bank", label: "Test Bank", roles: ["ADMIN"] },
-
+    { id: "owner-queue", label: "Owner Queue", roles: ["OWNER","ADMIN"] },
   ];
 
   items.forEach(it => {
@@ -87,6 +86,8 @@ function routeFromHash() {
   if (route === "permissions") return renderPermissionsPage({ headerEl: header, rootEl: body, params });
   if (route === "users-admin") return renderUsersAdminPage({ headerEl: header, rootEl: body, params });
   if (route === "test-bank") return renderTestBankPage({ headerEl: header, rootEl: body, params });
+  if (route === "owner-queue") return renderOwnerQueuePage({ headerEl: header, rootEl: body, params });
+
 
 
   header.textContent = route.toUpperCase();
