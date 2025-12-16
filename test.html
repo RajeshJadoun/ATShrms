@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NTW Test</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">NTW HRMS</div>
+      <div class="meta">Candidate Test</div>
+    </div>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="card">
+          <div style="font-weight:900">Test Instructions</div>
+          <div class="muted small" style="margin-top:8px">
+            Link expire ho sakta hai. Submit once.
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="card card-wide" id="box">Loading...</div>
+      </main>
+    </div>
+  </div>
+
+  <!-- IMPORTANT: ensure your config.js defines window.CONFIG.API_URL -->
+  <script src="./js/config.js"></script>
+  <script type="module" src="./js/test.js"></script>
+</body>
+</html>
