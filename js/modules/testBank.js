@@ -1,13 +1,21 @@
-// /js/modules/testBank.js
 import { apiCall } from "../api.js";
-//import { getState } from "../state.js";
+import { state } from "../state.js";
+
+export async function renderTestBankPage({ headerEl, rootEl }) {
+  headerEl.textContent = "TEST BANK";
+  return renderTestBank(rootEl);
+}
 
 export async function renderTestBank(root) {
-  const me = getState().me;
+  const me = state.user;
   if (!me || me.role !== "ADMIN") {
     root.innerHTML = `<div class="card"><h3>Not Allowed</h3><p>Only ADMIN can access Question Bank.</p></div>`;
     return;
   }
+
+  // ...baaki file same rehne do
+}
+
 
   root.innerHTML = `
     <div class="page">
