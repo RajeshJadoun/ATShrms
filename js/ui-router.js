@@ -7,6 +7,8 @@ import { renderOwnerPage } from "./modules/owner.js";
 import { renderInterviewsPage } from "./modules/interviews.js";
 import { renderPreInterviewPage } from "./modules/preinterview.js";
 import { renderAdminPage } from "./modules/admin.js";
+import { renderFinalInterviewPage } from "./modules/finalInterview.js";
+import { renderOnboardingPage } from "./modules/onboarding.js";
 
 export function buildNav() {
   const nav = document.getElementById("nav");
@@ -22,6 +24,8 @@ export function buildNav() {
     { id: "interviews", label: "Interviews", roles: ["ADMIN","HR"] },
     { id: "pre-interview", label: "Pre-Interview", roles: ["ADMIN","HR"] },
     { id: "admin", label: "Admin", roles: ["ADMIN"] }
+    { id: "final-interview", label: "Final Interview", roles: ["ADMIN","OWNER"] },
+    { id: "onboarding", label: "Onboarding", roles: ["ADMIN","HR"] },
   ];
 
   items.forEach(it => {
@@ -60,6 +64,8 @@ function routeFromHash() {
   if (route === "interviews") return renderInterviewsPage({ headerEl: header, rootEl: body, params });
   if (route === "pre-interview") return renderPreInterviewPage({ headerEl: header, rootEl: body, params });
   if (route === "admin") return renderAdminPage({ headerEl: header, rootEl: body, params });
+  if (route === "final-interview") return renderFinalInterviewPage({ headerEl: header, rootEl: body, params });
+  if (route === "onboarding") return renderOnboardingPage({ headerEl: header, rootEl: body, params });
 
   header.textContent = route.toUpperCase();
   body.innerHTML = `<div class="card card-wide">Module <b>${route}</b> pending (NEXT parts).</div>`;
