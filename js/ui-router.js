@@ -6,6 +6,7 @@ import { renderCallsPage } from "./modules/calls.js";
 import { renderOwnerPage } from "./modules/owner.js";
 import { renderInterviewsPage } from "./modules/interviews.js";
 import { renderPreInterviewPage } from "./modules/preinterview.js";
+import { renderAdminPage } from "./modules/admin.js";
 
 export function buildNav() {
   const nav = document.getElementById("nav");
@@ -58,6 +59,7 @@ function routeFromHash() {
   if (route === "owner") return renderOwnerPage({ headerEl: header, rootEl: body, params });
   if (route === "interviews") return renderInterviewsPage({ headerEl: header, rootEl: body, params });
   if (route === "pre-interview") return renderPreInterviewPage({ headerEl: header, rootEl: body, params });
+  if (route === "admin") return renderAdminPage({ headerEl: header, rootEl: body, params });
 
   header.textContent = route.toUpperCase();
   body.innerHTML = `<div class="card card-wide">Module <b>${route}</b> pending (NEXT parts).</div>`;
