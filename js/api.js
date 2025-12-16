@@ -3,29 +3,38 @@ import { state } from "./state.js";
 
 /**
  * IMPORTANT:
- * Hum headers set nahi kar rahe (no application/json),
- * so preflight OPTIONS trigger nahi hota. :contentReference[oaicite:3]{index=3}
+ * application/json header mat bhejo (Apps Script preflight avoid).
+ * body string => browser auto text/plain;charset=UTF-8 bhejta hai.
  */
 export async function apiCall(action, data = {}) {
-  const payload = {
-    action,
-    token: state.sessionToken || "",
-    data
-  };
+  const payload = { action, token: state.sessionToken || "", data };
 
-  await fetch(CONFIG.API_URL, {
+  const res = await fetch(CONFIG.API_URL, {
     method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify(payload) // browser sends as text/plain (simple request)
+    body: JSON.stringify(payload)
   });
 
-  // no-cors => you can't read response, so just return a local ok
-  return { ok: true };
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(
+      "API returned non-JSON response (deploy/permissions/CORS issue). Preview: " +
+      text.slice(0, 200)
+    );
+  }
+
+  if (!json.ok) {
+    throw new Error(json?.error?.message || json?.error || "API error");
+  }
+
+  return (json.data != null) ? json.data : json;
 }
 
-
 export async function pingApi() {
-  // doGet ping
   const res = await fetch(CONFIG.API_URL);
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch { return { ok: res.ok, preview: text.slice(0, 120) }; }
 }
