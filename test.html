@@ -1,36 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>NTW Test</title>
-  <link rel="stylesheet" href="./css/styles.css" />
+  <title>HRMS Test</title>
+  <link rel="stylesheet" href="./css/test.css" />
 </head>
 <body>
-  <div class="app">
-    <div class="topbar">
-      <div class="brand">NTW HRMS</div>
-      <div class="meta">Candidate Test</div>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <h2 class="h">Candidate Test</h2>
+        <div id="timer" class="pill">--:--</div>
+      </div>
+      <div id="meta" class="muted">Loading...</div>
     </div>
 
-    <div class="layout">
-      <aside class="sidebar">
-        <div class="card">
-          <div style="font-weight:900">Test Instructions</div>
-          <div class="muted small" style="margin-top:8px">
-            Link expire ho sakta hai. Submit once.
-          </div>
-        </div>
-      </aside>
+    <div id="app" class="card"></div>
 
-      <main class="main">
-        <div class="card card-wide" id="box">Loading...</div>
-      </main>
+    <div class="card">
+      <div class="row">
+        <button id="btnSubmit" class="btn">Submit</button>
+        <div id="msg" class="muted right"></div>
+      </div>
     </div>
   </div>
 
-  <!-- IMPORTANT: ensure your config.js defines window.CONFIG.API_URL -->
-  <script src="./js/config.js"></script>
-  <script type="module" src="./js/test.js"></script>
+  <script type="module" src="./js/test/main.js"></script>
 </body>
 </html>
